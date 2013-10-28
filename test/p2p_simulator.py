@@ -65,6 +65,7 @@ class Peer:
       self.sources.append(peer)
       peer.add_sink(self)            
     return True
+	
   #所有下游节点
   def downstream(self):
     if self.sinks == []:
@@ -100,6 +101,7 @@ class Peer:
       if r > self.loss_out:
         for sink in self.sinks:
           sink.put({'from':self, 'data':data})
+		  
   #丢包率，start为开始计算丢包率的下标，若为负数（-n）则计算最近n个包的丢包率        
   def loss_rate(self, start=0):
     if self.index == 0: return 0
