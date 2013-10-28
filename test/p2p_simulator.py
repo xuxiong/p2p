@@ -37,6 +37,7 @@ class Peer:
     self.data = []
     self.group = None
     self.index = None
+    self.sla = sla	
   
   #挑选源节点  
   def select_source(self):
