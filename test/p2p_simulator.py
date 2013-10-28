@@ -25,8 +25,9 @@ class Peer:
   loss_out:发送数据的丢包率
   max_source:数据来源上限
   max_sink:转发上限
+  sla:服务质量要求，当lossrate大于sla时，需要重新select_source
   '''
-  def __init__(self, buflen=10, loss_in=.0, loss_out=.0, max_source=1, max_sink=1):
+  def __init__(self, buflen=10, loss_in=.0, loss_out=.0, max_source=1, max_sink=1, sla=.0):
     self.loss_in = loss_in
     self.loss_out = loss_out
     self.buflen = buflen
@@ -39,6 +40,10 @@ class Peer:
   
   #挑选源节点  
   def select_source(self):
+    if self.index == 0: return
+    for source in self.sources:
+      source.remove_sink(self)
+    self.sources = [] 	  
     for peer in self.group.candidates():
       self.add_source(peer)
       if len(self.sources)>=self.max_source:
@@ -54,11 +59,20 @@ class Peer:
   def add_source(self, peer):
     if len(self.sources)>=self.max_source:
       return False 
-    if self != peer and peer not in self.sources: 
+    if self != peer and peer not in self.sources and peer not in self.downstream(): 
       self.sources.append(peer)
       peer.add_sink(self)            
     return True
-      
+  
+  def downstream(self):
+    if self.sinks == []:
+      return []
+    else:
+      sinks = self.sinks[:]	  
+      for sink in self.sinks:
+        sinks += sink.downstream()	  
+      return sinks
+	  
   def remove_sink(self, peer):
     self.sinks.remove(peer)
     
@@ -114,6 +128,8 @@ if __name__ == '__main__':
       else:#奇数包加入的新节点可有2个源节点
         p = Peer(loss_in=.2, max_source=2)
       group.join(p)         
-  
+    if i % 9 == 0:
+      for p in group.members: p.select_source()
+	  
   for p in group.members:
     print '%d: loss:%f source:[%s] sinks:[%s]\ndata:%s' % (p.index, p.loss_rate(), ','.join([str(s.index) for s in p.sources]), ','.join([str(s.index) for s in p.sinks]), ','.join([str(d) for d in p.data]))
