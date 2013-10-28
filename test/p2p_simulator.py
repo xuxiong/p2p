@@ -37,7 +37,8 @@ class Peer:
     self.data = []
     self.group = None
     self.index = None
-    self.sla = sla	
+    self.sla = sla
+    self.datafrom = {}	
   
   #挑选源节点  
   def select_source(self):
@@ -81,6 +82,11 @@ class Peer:
     self.sources.remove(peer)  
         
   def put(self, message):
+    mfrom = message['from']
+    if mfrom in self.datafrom.keys():#记录从不同源节点获取的消息数
+      self.datafrom[mfrom] += 1
+    else:
+      self.datafrom[mfrom] = 1	
     data = message['data']
     buf = self.data[-1*self.buflen:]
     if len(self.data)>0 and (data < min(buf) or data in buf):#不处理重复数据包
