@@ -60,7 +60,7 @@ class Peer:
   def add_source(self, peer):
     if len(self.sources)>=self.max_source:
       return False 
-    if self != peer and peer not in self.sources and peer not in self.downstream(): 
+    if self != peer and peer not in self.sources and peer not in self.downstream(): #避免环路
       self.sources.append(peer)
       peer.add_sink(self)            
     return True
@@ -80,7 +80,8 @@ class Peer:
   def remove_source(self, peer):
     self.sources.remove(peer)  
         
-  def put(self, data):
+  def put(self, message):
+    data = message['data']
     buf = self.data[-1*self.buflen:]
     if len(self.data)>0 and (data < min(buf) or data in buf):#不处理重复数据包
       return
@@ -92,7 +93,7 @@ class Peer:
       r = self.probability()
       if r > self.loss_out:
         for sink in self.sinks:
-          sink.put(data)
+          sink.put({'from':self, 'data':data})
   #丢包率，start为开始计算丢包率的下标，若为负数（-n）则计算最近n个包的丢包率        
   def loss_rate(self, start=0):
     if self.index == 0: return 0
@@ -122,7 +123,8 @@ if __name__ == '__main__':
   group = Group()
   group.join(p0)
   for i in xrange(100):
-    p0.put(i)
+    message = {'from':p0, 'data':i}
+    p0.put(message)
     if i % 5 == 0:#每发5个包，有新节点加入
       if i%2 == 0:#偶数包加入的新节点缺省只有一个源节点
         p = Peer(loss_in=.2)
