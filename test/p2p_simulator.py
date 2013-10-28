@@ -61,11 +61,11 @@ class Peer:
   def add_source(self, peer):
     if len(self.sources)>=self.max_source:
       return False 
-    if self != peer and peer not in self.sources and peer not in self.downstream(): #避免环路
+    if self != peer and peer not in self.sources:# and peer not in self.downstream(): #避免环路
       self.sources.append(peer)
       peer.add_sink(self)            
     return True
-	
+  '''允许环路情况下有死循环	
   #所有下游节点
   def downstream(self):
     if self.sinks == []:
@@ -75,7 +75,7 @@ class Peer:
       for sink in self.sinks:
         sinks += sink.downstream()	  
       return sinks
-	  
+  '''  
   def remove_sink(self, peer):
     self.sinks.remove(peer)
     
@@ -83,7 +83,7 @@ class Peer:
     self.sources.remove(peer)  
         
   def put(self, message):
-    mfrom = message['from']
+    mfrom = message['from'][0]
     if mfrom in self.datafrom.keys():#记录从不同源节点获取的消息数
       self.datafrom[mfrom] += 1
     else:
@@ -100,7 +100,11 @@ class Peer:
       r = self.probability()
       if r > self.loss_out:
         for sink in self.sinks:
-          sink.put({'from':self, 'data':data})
+          message['from'].insert(0, self)
+          if sink not in message['from']:#不是环路数据		  
+            sink.put({'from':message['from'], 'data':data})
+          #else:
+          #  print message['from']		  
 		  
   #丢包率，start为开始计算丢包率的下标，若为负数（-n）则计算最近n个包的丢包率        
   def loss_rate(self, start=0, end=None):
@@ -116,7 +120,7 @@ class Peer:
       return 1 - 1.0*len(data)/(mx - min(data) + 1)        
     else:
       return 1
-  
+  '''允许环路情况下有死循环
   def depth(self):
     if len(self.sources) == 0: 
       return 0
@@ -125,7 +129,7 @@ class Peer:
       for source in self.sources:
         d.append(source.depth()+1)
       return min(d)
-      
+  '''    
   def probability(self):
     return random.random() 
     
@@ -137,9 +141,9 @@ if __name__ == '__main__':
   group = Group()
   group.join(p0)
   for i in xrange(1000):
-    message = {'from':p0, 'data':i}
+    message = {'from':[p0], 'data':i}
     p0.put(message)
-    if i % 5 == 0 and i < 100:#每发5个包，有新节点加入
+    if i % 5 == 0 and i < 200:#每发5个包，有新节点加入
       '''
       if i%2 == 0:#偶数包加入的新节点缺省只有一个源节点
         p = Peer(loss_in=.2)
@@ -148,11 +152,11 @@ if __name__ == '__main__':
       '''
       p = Peer(loss_in=.2, max_source=2, max_sink=2)	
       group.join(p)         
-    if i == 500:
-      for p in group.members: p.select_source()
+    #if i == 500:
+    #  for p in group.members: p.select_source()
 	  
   for p in group.members:
     #print '%d: loss:%f source:[%s] sinks:[%s]\ndata:%s' % (p.index, p.loss_rate(), ','.join([str(s.index) for s in p.sources]), ','.join([str(s.index) for s in p.sinks]), ','.join([str(d) for d in p.data]))
-    print '%d: loss:%f depth:%d source:[%s] sinks:[%s]' % (p.index, p.loss_rate(-500), p.depth(), ','.join([str(s.index) for s in p.sources]), ','.join([str(s.index) for s in p.sinks]))
+    print '%d: loss:%f source:[%s] sinks:[%s]' % (p.index, p.loss_rate(-500), ','.join([str(s.index) for s in p.sources]), ','.join([str(s.index) for s in p.sinks]))
     print p.loss_rate(end=499)	
 	
