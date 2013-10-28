@@ -63,7 +63,7 @@ class Peer:
       self.sources.append(peer)
       peer.add_sink(self)            
     return True
-  
+  #所有下游节点
   def downstream(self):
     if self.sinks == []:
       return []
