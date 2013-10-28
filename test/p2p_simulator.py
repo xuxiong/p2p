@@ -103,11 +103,17 @@ class Peer:
           sink.put({'from':self, 'data':data})
 		  
   #丢包率，start为开始计算丢包率的下标，若为负数（-n）则计算最近n个包的丢包率        
-  def loss_rate(self, start=0):
+  def loss_rate(self, start=0, end=None):
     if self.index == 0: return 0
-    data = self.data[start:]
+    mx = 0	
+    if end == None:	
+      data = self.data[start:]
+      mx = Peer.max	  
+    else:
+      data = self.data[start:end]
+      mx = max(data)	  
     if len(data) > 0:
-      return 1 - 1.0*len(data)/(Peer.max - min(data) + 1)        
+      return 1 - 1.0*len(data)/(mx - min(data) + 1)        
     else:
       return 1
   
@@ -130,17 +136,23 @@ if __name__ == '__main__':
   p0 = Peer(max_sink=5)#源节点，允许有5个下游节点
   group = Group()
   group.join(p0)
-  for i in xrange(100):
+  for i in xrange(1000):
     message = {'from':p0, 'data':i}
     p0.put(message)
-    if i % 5 == 0:#每发5个包，有新节点加入
+    if i % 5 == 0 and i < 100:#每发5个包，有新节点加入
+      '''
       if i%2 == 0:#偶数包加入的新节点缺省只有一个源节点
         p = Peer(loss_in=.2)
       else:#奇数包加入的新节点可有2个源节点
         p = Peer(loss_in=.2, max_source=2)
+      '''
+      p = Peer(loss_in=.2, max_source=2, max_sink=2)	
       group.join(p)         
-    if i % 9 == 0:
+    if i == 500:
       for p in group.members: p.select_source()
 	  
   for p in group.members:
-    print '%d: loss:%f source:[%s] sinks:[%s]\ndata:%s' % (p.index, p.loss_rate(), ','.join([str(s.index) for s in p.sources]), ','.join([str(s.index) for s in p.sinks]), ','.join([str(d) for d in p.data]))
+    #print '%d: loss:%f source:[%s] sinks:[%s]\ndata:%s' % (p.index, p.loss_rate(), ','.join([str(s.index) for s in p.sources]), ','.join([str(s.index) for s in p.sinks]), ','.join([str(d) for d in p.data]))
+    print '%d: loss:%f depth:%d source:[%s] sinks:[%s]' % (p.index, p.loss_rate(-500), p.depth(), ','.join([str(s.index) for s in p.sources]), ','.join([str(s.index) for s in p.sinks]))
+    print p.loss_rate(end=499)	
+	
