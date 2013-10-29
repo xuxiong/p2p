@@ -165,7 +165,7 @@ if __name__ == '__main__':
   for i in xrange(2000):
     message = {'from':[p0], 'data':i}
     p0.put(message)
-    if i % 5 == 0 and i < 500:#每发5个包，有新节点加入
+    if i % 5 == 0 and i < 200:#每发5个包，有新节点加入
       '''
       if i%2 == 0:#偶数包加入的新节点缺省只有一个源节点
         p = Peer(loss_in=.2)
