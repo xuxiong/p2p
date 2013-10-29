@@ -162,10 +162,10 @@ if __name__ == '__main__':
   p0 = Peer(max_sink=5)#源节点，允许有5个下游节点
   group = Group()
   group.join(p0)
-  for i in xrange(1000):
+  for i in xrange(2000):
     message = {'from':[p0], 'data':i}
     p0.put(message)
-    if i % 5 == 0 and i < 200:#每发5个包，有新节点加入
+    if i % 5 == 0 and i < 500:#每发5个包，有新节点加入
       '''
       if i%2 == 0:#偶数包加入的新节点缺省只有一个源节点
         p = Peer(loss_in=.2)
@@ -181,7 +181,10 @@ if __name__ == '__main__':
     #print '%d: loss:%f source:[%s] sinks:[%s]\ndata:%s' % (p.index, p.loss_rate(), ','.join([str(s.index) for s in p.sources]), ','.join([str(s.index) for s in p.sinks]), ','.join([str(d) for d in p.data]))
     print '%d: loss:%f source:[%s] sinks:[%s]' % (p.index, p.loss_rate(start=499), ','.join([str(s.index) for s in p.sources]), ','.join([str(s.index) for s in p.sinks]))
   i = 0	
+  lr = []
   for p in group.members:  
 	if p.loss_rate(end=499) >= p.loss_rate(start=499): i += 1
-  print 'p.loss_rate(end=499) >= p.loss_rate(start=499):', i	
+	lr.append(p.loss_rate())
+  print 'p.loss_rate(end=499) >= p.loss_rate(start=499):', i
+  print 'lossrate: max:%f min:%f mean:%f' % (max(lr), min(lr), sum(lr)/len(lr))	
 	
