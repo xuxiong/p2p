@@ -45,11 +45,11 @@ class Peer:
     if self.index == 0: return
     for source in self.sources:
       source.remove_sink(self)
-    self.sources = [] 	  
+    self.sources = []           
     for peer in self.group.candidates():
       self.add_source(peer)
       if len(self.sources)>=self.max_source:
-        break
+        break	  
         
   def add_sink(self, peer):
     if len(self.sinks)>=self.max_sink:
@@ -135,7 +135,29 @@ class Peer:
     
   def available(self):
     return len(self.sinks) < self.max_sink     
-                
+  
+class Peer1(Peer):
+  #挑选源节点  
+  def select_source(self):
+    if self.index == 0: return
+    candidates = []	
+    for peer in self.group.candidates():#找出max_source个与已有源不重复的候选源
+      if peer not in self.sources:	
+        candidates.append(peer)		
+      if len(candidates) >= self.max_source:
+        break
+    candidates += self.sources #将已有的源和候选源合并一起，再后续选择
+    candidates = sorted(candidates, key = lambda m:m.loss_rate())[:self.max_source] #对候选进行排序后，选出topN个
+    for source in self.sources:	#删除不在topN中的已有源
+      if source not in candidates:
+        Peer.remove_source(self, source)		
+        source.remove_sink(self)
+    for c in candidates: #候选节点如果尚不在已有源中，则加入
+      if len(self.sources) < self.max_source:
+        self.add_source(c)
+      else:
+        break	  
+		
 if __name__ == '__main__':
   p0 = Peer(max_sink=5)#源节点，允许有5个下游节点
   group = Group()
@@ -157,6 +179,9 @@ if __name__ == '__main__':
 	  
   for p in group.members:
     #print '%d: loss:%f source:[%s] sinks:[%s]\ndata:%s' % (p.index, p.loss_rate(), ','.join([str(s.index) for s in p.sources]), ','.join([str(s.index) for s in p.sinks]), ','.join([str(d) for d in p.data]))
-    print '%d: loss:%f source:[%s] sinks:[%s]' % (p.index, p.loss_rate(-500), ','.join([str(s.index) for s in p.sources]), ','.join([str(s.index) for s in p.sinks]))
-    print p.loss_rate(end=499)	
+    print '%d: loss:%f source:[%s] sinks:[%s]' % (p.index, p.loss_rate(start=499), ','.join([str(s.index) for s in p.sources]), ','.join([str(s.index) for s in p.sinks]))
+  i = 0	
+  for p in group.members:  
+	if p.loss_rate(end=499) >= p.loss_rate(start=499): i += 1
+  print 'p.loss_rate(end=499) >= p.loss_rate(start=499):', i	
 	
