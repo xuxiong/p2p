@@ -134,7 +134,7 @@ class Peer:
     return random.random() 
     
   def available(self):
-    return len(self.sinks) < self.max_sink     
+    return len(self.sinks) < self.max_sink and (self.index == 0 or len(self.data) > self.buflen)
   
 class Peer1(Peer):
   #挑选源节点  
@@ -174,8 +174,8 @@ if __name__ == '__main__':
       '''
       p = Peer(loss_in=.2, max_source=2, max_sink=2)	
       group.join(p)         
-    #if i == 500:
-    #  for p in group.members: p.select_source()
+    if i == 500:
+      for p in group.members: p.select_source()
 	  
   for p in group.members:
     #print '%d: loss:%f source:[%s] sinks:[%s]\ndata:%s' % (p.index, p.loss_rate(), ','.join([str(s.index) for s in p.sources]), ','.join([str(s.index) for s in p.sinks]), ','.join([str(d) for d in p.data]))
